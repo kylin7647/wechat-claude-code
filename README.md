@@ -1,5 +1,7 @@
 # wechat-claude-code
 
+**English** | [中文](README_zh.md)
+
 A [Claude Code](https://claude.ai/claude-code) Skill that bridges personal WeChat to your local Claude Code. Chat with Claude from your phone via WeChat — text, images, permission approvals, slash commands, all supported.
 
 ## Features
