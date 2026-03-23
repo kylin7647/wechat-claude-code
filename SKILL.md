@@ -10,7 +10,7 @@ description: 微信消息桥接 - 在微信中与 Claude Code 聊天。支持文
 ## 前置条件
 
 - Node.js >= 18
-- macOS（daemon 使用 launchd 管理）
+- Windows / macOS / Linux（跨平台支持，使用 Node.js daemon 管理）
 - 个人微信账号（需扫码绑定）
 - 已安装 Claude Code（`@anthropic-ai/claude-agent-sdk`）
 
@@ -96,7 +96,7 @@ cd ~/.claude/skills/wechat-claude-code && npm run daemon -- status
 | 命令 | 执行 | 说明 |
 |------|------|------|
 | setup | `npm run setup` | 首次安装向导：生成 QR 码 → 微信扫码 → 配置工作目录 |
-| start | `npm run daemon -- start` | 启动 launchd 守护进程（开机自启、自动重启） |
+| start | `npm run daemon -- start` | 启动守护进程（开机自启、自动重启） |
 | stop | `npm run daemon -- stop` | 停止守护进程 |
 | restart | `npm run daemon -- restart` | 重启守护进程 |
 | status | `npm run daemon -- status` | 查看运行状态 |

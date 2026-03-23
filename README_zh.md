@@ -11,13 +11,13 @@
 - 权限审批——在微信中回复 `y`/`n` 控制工具执行
 - 斜杠命令——`/help`、`/clear`、`/model`、`/status`、`/skills`
 - 在微信中触发任意已安装的 Claude Code Skill
-- macOS launchd 守护进程——开机自启、崩溃自动重启
+- 跨平台守护进程——支持 Windows/macOS/Linux，开机自启、崩溃自动重启
 - 会话持久化——跨消息恢复上下文
 
 ## 前置条件
 
 - Node.js >= 18
-- macOS（daemon 通过 launchd 管理）
+- Windows / macOS / Linux（跨平台支持，使用 Node.js daemon 管理）
 - 个人微信账号（需扫码绑定）
 - 已安装 [Claude Code](https://docs.anthropic.com/en/docs/claude-code)（含 `@anthropic-ai/claude-agent-sdk`）
 
@@ -48,11 +48,21 @@ npm run setup
 
 ### 2. 启动服务
 
+**前台运行（直接查看对话日志）：**
+
+```bash
+npm run run
+```
+
+在控制台实时显示对话内容，按 Ctrl+C 停止。
+
+**后台运行（守护进程）：**
+
 ```bash
 npm run daemon -- start
 ```
 
-注册 launchd 代理，实现开机自启和自动重启。
+注册守护进程，实现开机自启和自动重启。日志写入 `~/.wechat-claude-code/logs/daemon.log`。
 
 ### 3. 在微信中聊天
 
@@ -64,7 +74,7 @@ npm run daemon -- start
 npm run daemon -- status   # 查看运行状态
 npm run daemon -- stop     # 停止服务
 npm run daemon -- restart  # 重启服务（代码更新后使用）
-npm run daemon -- logs     # 查看最近日志
+npm run daemon -- logs     # 查看后台模式日志
 ```
 
 ## 微信端命令
@@ -105,7 +115,7 @@ npm run daemon -- logs     # 查看最近日志
 - 守护进程通过长轮询监听微信 ilink bot API 的新消息
 - 消息通过 `@anthropic-ai/claude-agent-sdk` 转发给 Claude Code
 - 回复发送回微信
-- macOS launchd 代理保持守护进程运行
+- 跨平台守护进程管理保持服务运行
 
 ## 数据目录
 

@@ -1,13 +1,14 @@
 import type { Session } from '../session.js';
 import { findSkill } from '../claude/skill-scanner.js';
 import { logger } from '../logger.js';
-import { handleHelp, handleClear, handleModel, handlePermission, handleStatus, handleSkills, handleUnknown } from './handlers.js';
+import { handleHelp, handleClear, handleModel, handlePermission, handleStatus, handleSkills, handleHistory, handleUnknown } from './handlers.js';
 
 export interface CommandContext {
   accountId: string;
   session: Session;
   updateSession: (partial: Partial<Session>) => void;
   clearSession: () => Session;
+  getChatHistoryText?: (limit?: number) => string;
   text: string;
 }
 
@@ -24,8 +25,10 @@ export interface CommandResult {
  *   /help     - Show help text with all available commands
  *   /clear    - Clear the current session
  *   /model <name> - Update the session model
+ *   /permission <mode> - Switch permission mode
  *   /status   - Show current session info
  *   /skills   - List all installed skills
+ *   /history [n] - Show chat history (default 20 messages)
  *   /<skill>  - Invoke a skill by name (args are forwarded to Claude)
  */
 export function routeCommand(ctx: CommandContext): CommandResult {
@@ -54,6 +57,8 @@ export function routeCommand(ctx: CommandContext): CommandResult {
       return handleStatus(ctx);
     case 'skills':
       return handleSkills();
+    case 'history':
+      return handleHistory(ctx, args);
     default:
       return handleUnknown(cmd, args);
   }

@@ -75,8 +75,15 @@ async function runSetup(): Promise<void> {
     const pngData = await QRCode.toBuffer(qrcodeUrl, { type: 'png', width: 400, margin: 2 });
     writeFileSync(QR_PATH, pngData);
 
-    // Open with system default viewer (Preview.app on macOS)
-    execSync(`open "${QR_PATH}"`);
+    // Open with system default viewer (cross-platform)
+    const platform = process.platform;
+    if (platform === 'darwin') {
+      execSync(`open "${QR_PATH}"`);
+    } else if (platform === 'win32') {
+      execSync(`cmd /c start "" "${QR_PATH}"`);
+    } else {
+      execSync(`xdg-open "${QR_PATH}"`);
+    }
     console.log('已打开二维码图片，请用微信扫描：');
     console.log(`图片路径: ${QR_PATH}\n`);
     console.log('等待扫码绑定...');
@@ -120,7 +127,7 @@ async function runDaemon(): Promise<void> {
 
   const api = new WeChatApi(account.botToken, account.baseUrl);
   const sessionStore = createSessionStore();
-  const session: Session = sessionStore.load(account.accountId);
+  const session: Session = sessionStore.load(account.accountId, config.workingDirectory);
   const sender = createSender(api, account.accountId);
   const sharedCtx = { lastContextToken: '' };
   const permissionBroker = createPermissionBroker(async () => {
@@ -236,7 +243,8 @@ async function handleMessage(
       accountId: account.accountId,
       session,
       updateSession,
-      clearSession: () => sessionStore.clear(account.accountId),
+      clearSession: () => sessionStore.clear(account.accountId, session, config.workingDirectory),
+      getChatHistoryText: (limit?: number) => sessionStore.getChatHistoryText(session, limit),
       text: userText,
     };
 
@@ -313,6 +321,18 @@ async function sendToClaude(
   session.state = 'processing';
   sessionStore.save(account.accountId, session);
 
+  // Record user message in chat history
+  sessionStore.addChatMessage(session, 'user', userText || '(图片)');
+
+  // Log to console for PC monitoring
+  console.log('\n' + '='.repeat(50));
+  console.log(`[${new Date().toLocaleString('zh-CN')}] 微信消息: ${fromUserId}`);
+  console.log('内容:'.padEnd(8) + (userText || '(图片)'));
+  if (imageItem) {
+    console.log('图片:'.padEnd(8) + imageItem);
+  }
+  console.log('='.repeat(50));
+
   try {
     // Download image if present
     let images: QueryOptions['images'];
@@ -385,13 +405,29 @@ async function sendToClaude(
     // Send result back to WeChat
     if (result.error) {
       await sender.sendText(fromUserId, contextToken, `⚠️ 错误: ${result.error}`);
+      console.log('\n' + '='.repeat(50));
+      console.log(`[${new Date().toLocaleString('zh-CN')}] 错误`);
+      console.log('内容:'.padEnd(8) + result.error);
+      console.log('='.repeat(50));
     } else if (result.text) {
+      // Record assistant response in chat history
+      sessionStore.addChatMessage(session, 'assistant', result.text);
+
+      // Log to console for PC monitoring
+      console.log('\n' + '='.repeat(50));
+      console.log(`[${new Date().toLocaleString('zh-CN')}] Claude 回复`);
+      console.log('内容:'.padEnd(8) + result.text);
+      console.log('='.repeat(50));
+
       const chunks = splitMessage(result.text);
       for (const chunk of chunks) {
         await sender.sendText(fromUserId, contextToken, chunk);
       }
     } else {
       await sender.sendText(fromUserId, contextToken, 'ℹ️ Claude 无返回内容（可能因权限被拒而终止）');
+      console.log('\n' + '='.repeat(50));
+      console.log(`[${new Date().toLocaleString('zh-CN')}] 无返回内容`);
+      console.log('='.repeat(50));
     }
 
     // Update session with new SDK session ID
